@@ -1,25 +1,124 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+author: "Ben Holcombe"
+date: "Sunday, April 19, 2015"
+output: html_document
+keep_md: true
 ---
 
-
 ## Loading and preprocessing the data
+- We begin by downloading the [repdata_data_activity.zip][1] file.  
+[1]: http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip [repdata_data_activity.zip]
+- Once downloaded we unzipping the file.
+```{r}
+fileURL <- "http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+download.file(fileURL, destfile = "./activity.zip")
+unzip("activity.zip")
+```
 
-
+- Next the file is loaded into a data frame and the date column is converted from a factor class into a date class.
+```{r}
+ActivityData <- read.csv("activity.csv")
+ActivityData$date <- as.Date(ActivityData$date)
+```
 
 ## What is mean total number of steps taken per day?
+- Calculate the total steps for each day.
+```{r}
+ActivitySum <- aggregate(steps ~ date, FUN = sum, data = ActivityData)
+colnames(ActivitySum)[2] <- "steps.total"
+```
+- Display a histogram of the total number of steps per day.
+```{r}
+hist(ActivitySum$steps, breaks = 288)
+```
 
+- Calculate the Mean and Median steps for each day.
+```{r}
+ActivityMean <- aggregate(steps ~ date, FUN = mean, data = ActivityData)
+colnames(ActivityMean)[2] <- "steps.mean"
+ActivityMedian <- aggregate(steps ~ date, FUN = median, data = ActivityData)
+colnames(ActivityMedian)[2] <- "steps.median"
+ActivitySummary <- cbind(ActivitySum, steps.mean = ActivityMean$steps.mean, steps.median = ActivityMedian$steps.median)
+```
 
-
+The Mean, Median, and Total steps taken per day.
+```{r}
+ActivitySummary
+```
 ## What is the average daily activity pattern?
+- Calculate the total steps for each interval.
+```{r}
+ActivityIntervalSum <- aggregate(steps ~ interval, FUN = sum, data = ActivityData)
+```
+- Below is the total steps taken by interval.  This graph shows a peak early on.  
+```{r}
+ActivityIntervalAvg <- aggregate(steps ~ interval, FUN = mean, data = ActivityData)
+library(ggplot2)
+ChartTitle <- "Total Steps taken by Interval"
+ggplot(data = ActivityIntervalAvg, aes(interval, steps)) + geom_line() + labs(title = ChartTitle)
+```
 
+- Calculating the peak interval.
+```{r}
+PeakInterval <- ActivityIntervalSum[order(-ActivityIntervalSum["steps"]),]
+PeakInterval[1,]
+pinterval <- PeakInterval[1,1]
+psteps <- PeakInterval[1,2]
+```
 
+- The peak interval is `r pinterval` with a total of `r psteps` steps taken.
 
 ## Imputing missing values
+```{r}
+ActivityDataMissing <- is.na(ActivityData$steps)
+missing <- as.character(t(ActivityDataMissing) %*% ActivityDataMissing)
+```
+- The total number of missing values is `r missing`.
 
+- When we substitute 1 for the missing values we have the following results.
+```{r}
+ActivityData[is.na(ActivityData)] <- 1
+```
 
+```{r}
+ActivitySum <- aggregate(steps ~ date, FUN = sum, data = ActivityData)
+colnames(ActivitySum)[2] <- "steps.total"
+```
+- Display a histogram of the total number of steps per day.
+```{r}
+hist(ActivitySum$steps, breaks = 288)
+```
+
+- Calculate the Mean and Median steps for each day.
+```{r}
+ActivityMean <- aggregate(steps ~ date, FUN = mean, data = ActivityData)
+colnames(ActivityMean)[2] <- "steps.mean"
+ActivityMedian <- aggregate(steps ~ date, FUN = median, data = ActivityData)
+colnames(ActivityMedian)[2] <- "steps.median"
+ActivitySummary <- cbind(ActivitySum, steps.mean = ActivityMean$steps.mean, steps.median = ActivityMedian$steps.median)
+```
+
+The Mean, Median, and Total steps taken per day.
+```{r}
+ActivitySummary
+```
+
+Since this is a very simple substitution of values you see the histogram shift where the missing values are represented in the 0 - 5000 range.  
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+ActivityData$day <- weekdays(ActivityData$date)
+ActivityData$week.part <- sapply(ActivityData$day, switch,
+    Saturday = "weekend",
+    Sunday = "weekend",
+    Monday = "weekday",
+    Tuesday = "weekday",
+    Wednesday = "weekday",
+    Thursday = "weekday",
+    Friday = "weekday",
+  )
+
+ggplot(data = ActivityData, aes(x=interval, y=steps)) + geom_line() + facet_wrap( ~ week.part, ncol=1)
+
+```
