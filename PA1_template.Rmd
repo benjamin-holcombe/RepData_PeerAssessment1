@@ -1,9 +1,10 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-author: "Ben Holcombe"
-date: "Sunday, April 19, 2015"
-output: html_document
-keep_md: true
+title: "Reproducible Research: Peer Assessment 1" 
+author: "Ben Holcombe" 
+date: "Sunday, April 19, 2015" 
+output:
+  html_document:
+    keep_md: true
 ---
 
 ## Loading and preprocessing the data
